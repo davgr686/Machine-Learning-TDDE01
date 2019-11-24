@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1574565552279.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "9A1BF6FC",
+    "lastKnownWriteTime" : 7160569971446915616,
+    "last_content_update" : 1574565552279,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "id" : "67fccd53f168494282a6f14c012babc2",
+        "name" : "aic",
+        "title" : "aic"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "object_explorer"
+}

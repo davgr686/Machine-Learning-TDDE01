@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1573739204728.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "FF903952",
+    "lastKnownWriteTime" : 1574563697,
+    "last_content_update" : 1574563697698,
+    "path" : "~/TDDE01/lab1/part4.R",
+    "project_path" : "part4.R",
+    "properties" : {
+        "cursorPosition" : "118,0",
+        "scrollLine" : "90",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
