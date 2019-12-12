@@ -1,0 +1,169 @@
+---
+title: "assignment 2"
+author: "david gronberg"
+date: '2019-11-27'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(readxl)
+#install.packages("tree")
+library(tree)
+library(e1071)
+library(ggplot2)
+
+RNGversion('3.5.1')
+```
+
+```{r}
+data <- read_excel("creditscoring.xls")
+data$good_bad <- as.factor(data$good_bad)
+
+n=dim(data)[1]
+set.seed(12345) 
+id=sample(1:n, floor(n*0.5)) 
+train=data[id,] 
+
+id1=setdiff(1:n, id)
+set.seed(12345) 
+id2=sample(id1, floor(n*0.25)) 
+valid=data[id2,]
+
+id3=setdiff(id1,id2)
+test=data[id3,] 
+```
+
+
+```{r fig.height=5, fig.width=8}
+treeModel_deviance <- tree(good_bad ~., data=train, split = "deviance")
+treeModel_gini <- tree(good_bad ~., data=train, split = "gini")
+plot(treeModel_deviance); text(treeModel_deviance)
+plot(treeModel_gini); text(treeModel_gini)
+
+```
+```{r}
+summary(treeModel_deviance)
+summary(treeModel_gini)
+```
+```{r}
+treeModel_deviance.pred_test <- predict(treeModel_deviance, test, type = "class")
+treeModel_gini.pred_test <- predict(treeModel_gini, test, type = "class")
+
+treeModel_deviance.pred_train <- predict(treeModel_deviance, train, type = "class")
+treeModel_gini.pred_train <- predict(treeModel_gini, train, type = "class")
+```
+
+```{r}
+mean(treeModel_deviance.pred_test != test$good_bad)
+mean(treeModel_gini.pred_test != test$good_bad)
+
+mean(treeModel_deviance.pred_train != train$good_bad)
+mean(treeModel_gini.pred_train != train$good_bad)
+```
+Choose deviance model!
+
+```{r}
+j = 15
+
+
+trainScore=rep(0,j)
+testScore=rep(0,j)
+for(i in 2:j) 
+  {
+    prunedTree=prune.tree(treeModel_deviance,best=i)
+    pred=predict(prunedTree, newdata=valid, type="tree")
+    trainScore[i]=deviance(prunedTree)
+    testScore[i]=deviance(pred)
+}
+
+  plot(2:j, trainScore[2:j], xlab = "Number of leaves", ylab = "Deviance", type="b", col="red", ylim=c(200,600))
+  points(2:j, testScore[2:j], type="b", col="blue")
+  
+  combinedD <- (trainScore[2:j] + testScore[2:j])/2
+  bestI <- match(min(combinedD), combinedD) + 1
+  
+```
+
+
+
+```{r}
+optimalLeavesTree = prune.tree(treeModel_deviance,best=bestI)
+summary(optimalLeavesTree)
+plot(optimalLeavesTree) 
+text(optimalLeavesTree)
+
+optimalLeavesTree.prob_test <- predict(optimalLeavesTree, test, type = "class")
+mean(optimalLeavesTree.prob_test != test$good_bad)
+
+
+```
+```{r}
+NBclassfier = naiveBayes(good_bad~ ., data=train)
+NBclassfier.pred_test <- predict(NBclassfier, test, type = "class")
+NBclassfier.pred_train <- predict(NBclassfier, train, type = "class")
+
+table("Actual" = test$good_bad, "Predicted" = NBclassfier.pred_test )
+table("Actual" = train$good_bad, "Predicted" = NBclassfier.pred_train )
+mean(NBclassfier.pred_test != test$good_bad)
+mean(NBclassfier.pred_train != train$good_bad)
+
+```
+
+```{r}
+NBclassfier.prob_test <- predict(NBclassfier, test, type = "raw")
+NBclassfier.pred_train <- predict(NBclassfier, train, type = "raw")
+optimalLeavesTree.prob_test <- predict(optimalLeavesTree, test, type = "vector")
+
+pi = seq(0.05, 0.95, 0.05)
+TPR.nb <- rep(0, length(pi))
+FPR.nb <- rep(0, length(pi))
+TPR.tree <- rep(0, length(pi))
+FPR.tree <- rep(0, length(pi))
+for (i in 1:length(pi))
+{
+  optimalLeavesTree.pred_test <- ifelse(optimalLeavesTree.prob_test[,2] > pi[i], "good", "bad")
+  tab <-table("Predicted" = optimalLeavesTree.pred_test, "Actual" = test$good_bad ) 
+  TP <- tab[1]
+  FN <- tab[2]
+  FP <- tab[3]
+  TN <- tab[4]
+  
+  TPR.tree[i] <- TP/(TP + FN)
+  FPR.tree[i] <- FP/(FP + TN)
+  
+  
+  NBclassfierWCutoff.pred_test <- ifelse(NBclassfier.prob_test[,2] > pi[i], "good", "bad")
+  tab <-table("Predicted" = NBclassfierWCutoff.pred_test, "Actual" = test$good_bad ) 
+  TP <- tab[1]
+  FN <- tab[2]
+  FP <- tab[3]
+  TN <- tab[4]
+  
+  TPR.nb[i] <- TP/(TP + FN)
+  FPR.nb[i] <- FP/(FP + TN)
+}
+
+plotdf = data.frame("FPR" = FPR.nb, "TPR" = TPR.nb, "FPR_tree" = FPR.tree, "TPR_tree" = TPR.tree)
+
+
+ggplot() + geom_point(data = plotdf, mapping = aes(x = FPR, y = TPR)) + geom_line(data = plotdf, mapping = aes(x = FPR, y = TPR, colour = "Naive Bayes")) + geom_point(data = plotdf, mapping = aes(x = FPR_tree, y = TPR_tree)) + geom_line(data = plotdf, mapping = aes(x = FPR_tree, y = TPR_tree, colour = "Optimal Tree")) +xlim(0,1) + ylim(0,1) 
+
+
+```
+```{r}
+NBclassfier.pred_test.raw <- predict(NBclassfier, test, type = "raw")
+NBclassfier.pred_train.raw <- predict(NBclassfier, train, type = "raw")
+
+loss_train <- ifelse(NBclassfier.pred_train.raw[,2] > (NBclassfier.pred_train.raw[,1] * 10), "good", "bad")
+loss_test <- ifelse(NBclassfier.pred_test.raw[,2]/NBclassfier.pred_test.raw[,1] > 10, "good", "bad")
+
+
+table("Actual" = test$good_bad, "Predicted" = loss_test )
+table("Actual" = train$good_bad, "Predicted" = loss_train )
+```
+
+
+
+
+

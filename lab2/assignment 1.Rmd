@@ -1,0 +1,84 @@
+---
+title: "lab 2"
+author: "david gronberg"
+date: '2019-11-26'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(MASS)
+```
+
+```{r import data}
+data <- read.csv("australian-crabs.csv")
+
+set.seed(12345)
+n <- dim(data)[1]
+id=sample(1:n, floor(n*0.5))
+#train=data[id,]
+#test=data[-id,]
+```
+
+```{r message=TRUE, warning=TRUE}
+ggplot(data, aes(x=CL, y=RW)) + geom_point(aes(color = sex))
+```
+
+
+```{r message=TRUE, warning=TRUE}
+ldaModel <- lda(sex ~ CL + RW, data = data)
+
+```
+```{r}
+preds_sex <- predict(ldaModel, data)
+
+
+ggplot(data, aes(x=CL, y=RW)) + geom_point(aes(color = preds_sex$class))
+```
+```{r}
+table("Actual" = data$sex, "Predicted" = preds_sex$class)
+mean(preds_sex$class != data$sex)
+```
+The confusion matrix and misclassification rate shows that the quality of the fit is high and the model predicts the sex with low error. 
+
+```{r message=TRUE, warning=TRUE}
+ldaModel_prior <- lda(sex ~ CL + RW, data = data, prior=c(.1, .9))
+ldaModel_prior$prior
+```
+```{r}
+preds_sex_prior <- predict(ldaModel_prior, data)
+
+
+ggplot(data, aes(x=CL, y=RW)) + geom_point(aes(color = preds_sex_prior$class))
+```
+
+```{r}
+table("Actual" = data$sex, "Predicted" = preds_sex_prior$class)
+mean(preds_sex_prior$class != data$sex)
+```
+
+When using the priors p(male) = 0.9 & p(female) = 0.1, the misclassification rate more than doubled. When looking at the confusion matrix, the model is 100% accurate when predicting Male. However, it performs worse when predicting Female.
+
+
+```{r}
+logRegModel <- glm(sex ~ CL + RW, data = data, family = binomial)
+
+logReg_probs <- predict(logRegModel, data, type = "response") 
+logReg_preds <- ifelse(logReg_probs > 0.5, "Male", "Female")
+```
+```{r}
+table("Actual" = data$sex, "Predicted" = logReg_preds)
+mean(logReg_preds != data$sex)
+ggplot(data, aes(x=CL, y=RW)) + geom_point(aes(color = logReg_preds))
+```
+```{r}
+slope <- coef(logRegModel)[2]/(-coef(logRegModel)[3])
+intercept <- coef(logRegModel)[1]/(-coef(logRegModel)[3])
+
+ggplot(data, aes(x=CL, y=RW)) + geom_point(aes(color = logReg_preds)) +
+    stat_function(fun=function(x) {intercept + slope*x}, color = "black", size = 1)
+
+```
+
+
