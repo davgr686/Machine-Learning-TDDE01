@@ -9,11 +9,11 @@ temps <- read.csv("temps50k.csv")
 st <- merge(stations,temps,by="station_number")
 
 target_point = c(18.0574, 59.3420)
-h_distance <- 100000    # These three values are up to the students 
-h_date <- 12
+h_distance <- 50000    # These three values are up to the students 
+h_date <- 7
 h_time <- 6
 
-pred_date <- "2011-08-04" # The date to predict (up to the students) 
+pred_date <- "2011-01-05" # The date to predict (up to the students) 
 times <- c("04:00:00", "06:00:00", "08:00:00", "10:00:00", "12:00:00", "14:00:00", "16:00:00", "18:00:00", "20:00:00", "22:00:00", "24:00:00")
 temp <- vector(length=length(times))
 # Students’ code here
@@ -67,37 +67,44 @@ distance_kernel <- function(X, target, h_distance) {
   return (k)
 }
 
-
-#date_distances <- date_kernel(df_before, pred_date, h_date)
-#plot(date_distances)
 xy_distances <- distance_kernel(df_before, target_point, h_distance)
-#plot(xy_distances)
-time_distances <- time_kernel(df_before, 12, h_time)
+plot(xy_distances)
 
+index_date <- c(yday(df_before$date))
+date_distances <- date_kernel(df_before, pred_date, h_date)
+plot(y = date_distances, x = index_date)
+
+#index_time <- as.numeric(substring(df_before$time,1,2))
+#time_distances <- time_kernel(df_before, 12, h_time)
+#plot(y = time_distances, x = index_time)
 
 denom = c()
 nomi = c()
 
 
-pred_dates <- c("2011-01-04", "2011-02-04", "2011-03-04", "2011-04-04", "2011-05-04", "2011-06-04", "2011-07-04", "2011-08-04", "2011-09-04", "2011-10-04","2011-11-04", "2011-12-04")
+'pred_dates <- c("2011-01-04", "2011-02-04", "2011-03-04", "2011-04-04", "2011-05-04", "2011-06-04", "2011-07-04", "2011-08-04", "2011-09-04", "2011-10-04","2011-11-04", "2011-12-04")
 
 pred = c()
 for (x in 1:length(pred_dates))
 {
   temp_date_distances <- date_kernel(df_before, pred_dates[x], h_date)
   for (i in 1:length(df_before$date)) {
-    denom[i] <- (temp_date_distances[i] * time_distances[i] * xy_distances[[i]]) 
+    denom[i] <- (temp_date_distances[i] + time_distances[i] + xy_distances[[i]]) 
     nomi[i] <- (denom[i] * df_before$air_temperature[i])
   }
   pred[x] <- sum(nomi) / sum(denom)
   
 }
 
-plot(pred, type="o", ylab="Celcius")
+
+plot(pred, axes=FALSE, xlab="", ylab="Predicted temperature", main="Predicted temperatures (addition)")
+axis(2)
+axis(1, at=seq_along(pred),labels=as.character(pred_dates), las=2)
+box()'
 
 
 
-'pred = c()
+pred = c()
 for (x in 1:length(times))
 {
   temp_time <- as.numeric(substring(times[x], 1, 2))
@@ -108,11 +115,12 @@ for (x in 1:length(times))
   }
   pred[x] <- sum(nomi) / sum(denom)
   
-}'
+}
   
-#plot(pred, type="o", ylab="Celcius")
-#plot(temp, type="o")
-
+plot(pred, axes=FALSE, xlab="", ylab="Predicted temperature", main="Predicted temperatures (multiplication)")
+axis(2)
+axis(1, at=seq_along(pred),labels=as.character(times), las=2)
+box()
 
 
 
